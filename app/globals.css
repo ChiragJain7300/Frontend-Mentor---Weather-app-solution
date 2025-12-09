@@ -4,23 +4,22 @@
   --background: #ffffff;
   --foreground: #171717;
 }
+@theme {
+  --color-Neutral-900: hsl(243, 96%, 9%);
+  --color-Neutral-800: hsl(243, 27%, 20%);
+  --color-Neutral-700: hsl(243, 23%, 24%);
+  --color-Neutral-600: hsl(243, 23%, 30%);
+  --color-Neutral-300: hsl(240, 6%, 70%);
+  --color-Neutral-200: hsl(250, 6%, 84%);
+  --color-Neutral-0: hsl(0, 0%, 100%);
 
-@theme inline {
+  --color-Orange-500: hsl(28, 100%, 52%);
+
+  --color-Blue-500: hsl(233, 67%, 56%);
+  --color-Blue-700: hsl(248, 70%, 36%);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
