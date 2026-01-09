@@ -7,26 +7,26 @@ export interface WeatherComponents {
 export interface DailyForecast {
   id: number;
   day: string;
-  imgLink?: string;
-  minTemp: string;
-  maxTemp: string;
+  imgLink?: number;
+  minTemp: number;
+  maxTemp: number;
 }
 export interface HourlyForecast {
   id: number; // 0–23 or use i + 1 if you prefer
-  imgLink?: string;
+  imgLink?: number;
   hour: string;
   temperature: string;
 }
-export interface Location {
-  long: string;
-  lat: string;
+export interface LocationObj {
+  long: number;
+  lat: number;
   locationCity: string;
+  locationState?: string;
   locationCountry?: string;
 }
 export interface currentWeather {
-  locationInfo: string;
   currentTemp: number;
-  imgLink?: string;
+  weatherCode?: number;
 }
 export const weatherComponentsSample: WeatherComponents[] = [
   {
@@ -59,16 +59,16 @@ export const dailyForecastSample: DailyForecast[] = Array.from(
   (_, i) => ({
     id: i,
     day: "",
-    imgLink: "",
-    minTemp: "",
-    maxTemp: "",
+    imgLink: -1,
+    minTemp: 0,
+    maxTemp: 0,
   })
 );
 export const hourlyForecastSample: HourlyForecast[] = Array.from(
   { length: 24 },
   (_, i) => ({
     id: i, // 0–23 or use i + 1 if you prefer
-    imgLink: "",
+    imgLink: -1,
     hour: "",
     temperature: "",
   })
