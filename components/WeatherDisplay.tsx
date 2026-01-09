@@ -6,8 +6,67 @@ import {
   WeatherComponents,
 } from "@/constants";
 import Image from "next/image";
-import { useEffect } from "react";
+import { useContext } from "react";
+import { WeatherContext } from "./contextProvider/WeatherContextProvider";
+export function EmojiDisplay({
+  weatherCode,
+  alt,
+}: {
+  weatherCode: number;
+  alt?: string;
+}) {
+  let imgLink = "";
 
+  switch (weatherCode) {
+    case 2:
+      imgLink = "icon-partly-cloudy.webp";
+      break;
+
+    case 3:
+      imgLink = "icon-overcast.webp";
+      break;
+
+    case 45:
+    case 48:
+      imgLink = "icon-fog.webp";
+      break;
+
+    case 51:
+    case 53:
+    case 55:
+    case 56:
+    case 57:
+      imgLink = "icon-drizzle.webp";
+      break;
+
+    case 61:
+    case 63:
+    case 65:
+    case 66:
+    case 67:
+      imgLink = "icon-rain.webp";
+      break;
+
+    case 71:
+    case 73:
+    case 75:
+    case 77:
+      imgLink = "icon-snow.webp";
+      break;
+
+    case 96:
+    case 95:
+    case 99:
+      imgLink = "icon-storm.webp";
+      break;
+    default:
+      imgLink = "icon-sunny.webp";
+  }
+
+  return (
+    <Image src={"/assets/images/" + imgLink} fill alt={alt || ""} sizes="" />
+  );
+}
 const WeatherDisplay = ({
   currentWeather,
   weatherComponents,
@@ -19,9 +78,8 @@ const WeatherDisplay = ({
   hourlyForecast: HourlyForecast[];
   dailyForecast: DailyForecast[];
 }) => {
-  useEffect(() => {
-    console.log("use Effect 3");
-  }, []);
+  const { location } = useContext(WeatherContext)!;
+  const date = new Date();
   return (
     <div className="w-full md:max-w-4xl xl:max-w-7xl mx-auto text-white p-4 mb-10">
       <div className="flex flex-col sm:flex-row gap-5 w-full">
@@ -29,15 +87,32 @@ const WeatherDisplay = ({
           <div className="flex flex-col gap-3 mb-5">
             <div className="flex w-full min-h-48 bg-Neutral-700 rounded-xl">
               {currentWeather?.currentTemp ? (
-                <div className="w-full h-full bg-[url('/assets/images/bg-today-large.svg')] rounded-xl bg-cover bg-center p-4">
+                <div className="w-full h-full bg-[url('/assets/images/bg-today-large.svg')] rounded-xl bg-cover bg-center p-4 flex items-center justify-between">
                   {" "}
                   <div>
-                    <h1>{currentWeather.locationInfo}</h1>
-                    <p>Nov 30, 2025</p>
+                    <h1 className="text-2xl font-bold">
+                      {location.locationCity}, {location.locationCountry}
+                    </h1>
+                    <p>
+                      {date.toLocaleDateString("en-US", {
+                        weekday: "long",
+                        month: "short",
+                        day: "2-digit",
+                        year: "numeric",
+                      })}
+                    </p>
                   </div>
-                  <div>
-                    {/* Image */}
-                    <span>{currentWeather.currentTemp}</span>
+                  <div className="flex items-center">
+                    <div className="w-20 h-20 relative">
+                      {/* Image */}
+                      <EmojiDisplay
+                        weatherCode={currentWeather.weatherCode!}
+                        alt={"current weather code"}
+                      />
+                    </div>
+                    <span className="text-7xl font-bold italic">
+                      {Math.round(currentWeather.currentTemp)}°
+                    </span>
                   </div>
                 </div>
               ) : (
@@ -67,13 +142,18 @@ const WeatherDisplay = ({
               {dailyForecast.map((item) => (
                 <div
                   key={item.id}
-                  className="bg-Neutral-700 rounded-lg min-h-28"
+                  className="bg-Neutral-700 rounded-lg min-h-28 flex flex-col items-center p-2 justify-between"
                 >
                   <h3>{item.day}</h3>
-                  {/* image */}
-                  <div>
-                    <span>{item.maxTemp}</span>
-                    <span>{item.minTemp}</span>
+                  <div className="relative h-8 w-8">
+                    <EmojiDisplay
+                      weatherCode={item.imgLink!}
+                      alt="daily forecast codes"
+                    />
+                  </div>
+                  <div className="w-full flex items-center justify-between">
+                    {item.maxTemp !== 0 && <span>{item.maxTemp}°</span>}
+                    {item.minTemp !== 0 && <span>{item.minTemp}°</span>}
                   </div>
                 </div>
               ))}
@@ -98,14 +178,16 @@ const WeatherDisplay = ({
             {hourlyForecast.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between rounded-lg w-full min-h-10 bg-Neutral-600"
+                className="flex items-center justify-between rounded-lg w-full min-h-10 bg-Neutral-600 px-2 py-1 text-sm"
               >
-                <div>
-                  {/* image */}
+                <div className="flex gap-1 items-center font-semibold">
+                  <div className="relative w-6 h-6">
+                    <EmojiDisplay weatherCode={item.imgLink!} />
+                  </div>
                   <p>{item.hour}</p>
                 </div>
 
-                <p>{item.temperature}</p>
+                <p className="text-xs italic">{item.temperature}°</p>
               </div>
             ))}
           </div>

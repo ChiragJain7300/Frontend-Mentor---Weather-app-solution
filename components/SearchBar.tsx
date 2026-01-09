@@ -1,19 +1,23 @@
 "use client";
-import { Location } from "@/constants";
+import { LocationObj } from "@/constants";
 import Image from "next/image";
-import { Dispatch, FormEvent, SetStateAction, useState } from "react";
+import { FormEvent, useState } from "react";
+import { useWeatherContext } from "./contextProvider/WeatherContextProvider";
 
-const SearchBar = ({
-  setLocation,
-}: {
-  setLocation: Dispatch<SetStateAction<Location>>;
-}) => {
+const SearchBar = () => {
   const [searchText, setSearchText] = useState("");
+  const { setLocation } = useWeatherContext();
+  const [locationArr, setLocationArr] = useState<LocationObj[]>([]);
+  const [loading, setLoading] = useState(false);
+
   const handleSearchSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!searchText.trim()) return;
+
+    setLoading(true);
+    setLocationArr([]);
     const res = await fetch(
-      `https://geocoding-api.open-meteo.com/v1/search?name=${searchText}&count=1&language=en&format=json`,
+      `https://geocoding-api.open-meteo.com/v1/search?name=${searchText}&count=5&language=en&format=json`,
       {
         method: "GET",
       }
@@ -23,15 +27,23 @@ const SearchBar = ({
     if (data?.results) {
       const { results } = data;
       console.log("geo data", results);
-
-      setLocation({
-        lat: results[0].latitude,
-        long: results[0].longitude,
-        locationCity: results[0].name,
-        locationCountry: results[0]?.admin1,
-      });
+      setLocationArr(
+        results.map((item: any) => ({
+          long: item.longitude,
+          lat: item.latitude,
+          locationCity: item.name,
+          locationState: item.admin1,
+          locationCountry: item.country,
+        }))
+      );
+      setLoading(false);
+      // setLocation({
+      //   lat: results[0].latitude,
+      //   long: results[0].longitude,
+      //   locationCity: results[0].name,
+      //   locationCountry: results[0]?.admin1,
+      // });
     }
-    setSearchText("");
   };
   return (
     <div className="mb-5 px-4">
@@ -52,11 +64,37 @@ const SearchBar = ({
             type="text"
             name="searchBar"
             id="searchBar"
-            className="w-full py-2 px-9 bg-Neutral-600 rounded-lg placeholder:text-white text-white"
+            className="w-full py-2 px-9 bg-Neutral-700 rounded-lg placeholder:text-white text-white border border-transparent"
             placeholder="Search for a place"
             value={searchText}
             onChange={(e) => setSearchText(e.currentTarget.value)}
           />
+          <div className="absolute w-full top-13 z-50 text-white">
+            {loading && locationArr.length === 0 && (
+              <div className="flex items-center gap-2 bg-Neutral-700 rounded-lg py-2 px-4">
+                <Image
+                  src={"/assets/images/icon-loading.svg"}
+                  alt="loading-img"
+                  width={10}
+                  height={10}
+                />
+                <p>Search in progress</p>
+              </div>
+            )}
+            {!loading && locationArr.length > 0 && (
+              <div className="flex flex-col bg-Neutral-700 rounded-lg">
+                {locationArr.map((item, index) => (
+                  <div
+                    key={index}
+                    className="hover:bg-Neutral-600 transition-colors px-4 py-2 cursor-pointer rounded-lg"
+                  >
+                    {item.locationCity}, {item.locationState},{" "}
+                    {item.locationCountry}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <button
