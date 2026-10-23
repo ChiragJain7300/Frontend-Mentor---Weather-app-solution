@@ -1,36 +1,29 @@
 "use client";
-import { WeatherContext } from "@/components/contextProvider/WeatherContextProvider";
+
+import { UnitsI, useWeatherContext } from "@/components/contextProvider/WeatherContextProvider";
 import Header from "@/components/Header";
 import SearchBar from "@/components/SearchBar";
 import WeatherDisplay from "@/components/WeatherDisplay";
 import {
-  currentWeather,
   DailyForecast,
-  dailyForecastSample,
   HourlyForecast,
-  hourlyForecastSample,
-  WeatherComponents,
-  weatherComponentsSample,
+  WeatherComponentsI,
+  WeatherDataI,
+  WeatherState,
 } from "@/constants";
 import useGetWeather from "@/hooks/get-weather";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 const dayString = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
 export default function Home() {
   const { loadWeatherDetails } = useGetWeather();
-  const { location } = useContext(WeatherContext)!;
-  const [loading, setLoading] = useState(false);
-  const [weatherComponents, setWeatherComponents] = useState<
-    WeatherComponents[]
-  >(weatherComponentsSample);
-  const [hourlyForecast, setHourlyForecast] =
-    useState<HourlyForecast[]>(hourlyForecastSample);
-  const [dailyForecast, setDailyForecast] =
-    useState<DailyForecast[]>(dailyForecastSample);
-
-  const [currentWeather, setCurrentWeather] = useState<currentWeather | null>(
-    null
-  );
+  const { location, units } = useWeatherContext();
+  const [weather, setWeather] = useState<WeatherState>({
+    data: null,
+    status: "idle",
+    error: null,
+  });
 
   useEffect(() => {
     if (!location) return;
@@ -38,42 +31,106 @@ export default function Home() {
     let cancelled = false;
 
     async function fetchWeather() {
-      const { currentWeather } = await loadWeatherDetails(location);
-      if (!currentWeather || cancelled) return;
+      setWeather((prev) => ({ ...prev, status: "loading" }));
 
-      setCurrentWeather({
-        currentTemp: currentWeather.currentTemp,
-        weatherCode: currentWeather.currentWeatherCode,
-      });
+      try {
+        const { currentWeather } = await loadWeatherDetails(location, units);
+        if (!currentWeather || cancelled) return;
 
-      setWeatherComponents((prev) =>
-        prev.map((weather, index) => ({
-          ...weather,
-          value: String(currentWeather.current[index]),
-        }))
-      );
-      setDailyForecast((prev) =>
-        prev.map((dailFore, index) => ({
-          ...dailFore,
-          day: dayString[currentWeather?.daily.time[index].getDay()],
-          minTemp: Math.round(currentWeather.daily.temperature_2m_min![index]),
-          maxTemp: Math.round(currentWeather.daily.temperature_2m_max![index]),
-          imgLink: currentWeather.daily.weather_code![index],
-        }))
-      );
-      setHourlyForecast((prev) =>
-        prev.map((item, index) => ({
-          ...item,
-          temperature: Math.round(
-            currentWeather.hourly.temperature_2m![index]
-          ).toString(),
-          imgLink: currentWeather.hourly.weather_code![index], // store weatherCode
-          hour: currentWeather.hourly.time[index].toLocaleTimeString("en-US", {
-            hour: "numeric",
-            hour12: true,
+        const weatherComponentsData: WeatherComponentsI[] = [
+          {
+            id: 1,
+            title: "Feels Like",
+            value: `${Math.round(Number(currentWeather.current[0]))}°`,
+            unit: "",
+          },
+          {
+            id: 2,
+            title: "Humidity",
+            value: `${Math.round(Number(currentWeather.current[1]))}%`,
+            unit: "",
+          },
+          {
+            id: 3,
+            title: "Wind",
+            value: `${Math.round(Number(currentWeather.current[2]))} ${
+              units.windSpeed === "mph" ? "mph" : "km/h"
+            }`,
+            unit: "",
+          },
+          {
+            id: 4,
+            title: "Precipitation",
+            value: `${Math.round(Number(currentWeather.current[3]))} ${
+              units.precipitation === "in" ? "in" : "mm"
+            }`,
+            unit: "",
+          },
+        ];
+
+        const dailyData: DailyForecast[] = Array.from(
+          { length: currentWeather.daily.time.length },
+          (_, index) => ({
+            day: dayString[currentWeather.daily.time[index].getDay()],
+            minTemp: Math.round(currentWeather.daily.temperature_2m_min![index]),
+            maxTemp: Math.round(currentWeather.daily.temperature_2m_max![index]),
+            imgLink: currentWeather.daily.weather_code![index],
           }),
-        }))
-      );
+        );
+
+        const fullDayString = [
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+        ];
+
+        const hourlyData: HourlyForecast[] = Array.from(
+          { length: currentWeather.hourly.time.length },
+          (_, index) => {
+            const timeObj = currentWeather.hourly.time[index];
+            return {
+              day: fullDayString[timeObj.getDay()],
+              timestamp: timeObj.getTime(),
+              hour: timeObj.toLocaleTimeString("en-US", {
+                hour: "numeric",
+                hour12: true,
+              }),
+              temperature: Math.round(  
+                currentWeather.hourly.temperature_2m![index],
+              ).toString(),
+              imgLink: currentWeather.hourly.weather_code![index],
+            };
+          },
+        );
+
+        const data: WeatherDataI = {
+          currentTemp: currentWeather.currentTemp,
+          weatherCode: currentWeather.currentWeatherCode,
+          weatherComponents: weatherComponentsData,
+          dailyForecast: dailyData,
+          hourlyForecast: hourlyData,
+        };
+
+        if (!cancelled) {
+          setWeather({
+            data,
+            status: "success",
+            error: null,
+          });
+        }
+      } catch (err: unknown) {
+        if (!cancelled) {
+          setWeather({
+            data: null,
+            status: "error",
+            error: err instanceof Error ? err.message : "Failed to fetch weather data",
+          });
+        }
+      }
     }
 
     fetchWeather();
@@ -81,10 +138,10 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [location, loadWeatherDetails]);
+  }, [location, units, loadWeatherDetails]);
   return (
     <div className="min-h-screen font-sans dark:bg-Neutral-900">
-      <Header />
+      <Header units={units} />
       <main className="min-h-screen w-full py-1">
         <h1 className="text-white font-bold text-center md:text-4xl text-5xl mb-10 px-4">
           How&apos;s the sky looking today?
@@ -92,12 +149,7 @@ export default function Home() {
 
         <SearchBar />
 
-        <WeatherDisplay
-          currentWeather={currentWeather}
-          dailyForecast={dailyForecast}
-          hourlyForecast={hourlyForecast}
-          weatherComponents={weatherComponents}
-        />
+        <WeatherDisplay weather={weather} location={location} />
       </main>
     </div>
   );

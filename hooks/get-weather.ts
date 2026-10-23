@@ -1,25 +1,31 @@
+import { UnitsI } from "@/components/contextProvider/WeatherContextProvider";
 import { LocationObj } from "@/constants";
 import { fetchWeatherApi } from "openmeteo";
 import { useCallback } from "react";
 
 export default function useGetWeather() {
-  const loadWeatherDetails = useCallback(async (location: LocationObj) => {
-    const params = {
-      latitude: location.lat,
-      longitude: location.long,
-      daily: ["temperature_2m_max", "temperature_2m_min", "weather_code"],
-      hourly: ["temperature_2m", "weather_code"],
-      current: [
-        "temperature_2m",
-        "relative_humidity_2m",
-        "apparent_temperature",
-        "wind_speed_10m",
-        "precipitation",
-        "weather_code",
-      ],
-    };
-    const url = "https://api.open-meteo.com/v1/forecast";
-    const responses = await fetchWeatherApi(url, params);
+  const loadWeatherDetails = useCallback(
+    async (location: LocationObj, units?: UnitsI) => {
+      const params = {
+        latitude: location.lat,
+        longitude: location.long,
+        timezone: "auto",
+        temperature_unit: units?.temp === "F" ? "fahrenheit" : "celsius",
+        wind_speed_unit: units?.windSpeed === "mph" ? "mph" : "kmh",
+        precipitation_unit: units?.precipitation === "in" ? "inch" : "mm",
+        daily: ["temperature_2m_max", "temperature_2m_min", "weather_code"],
+        hourly: ["temperature_2m", "weather_code"],
+        current: [
+          "temperature_2m",
+          "relative_humidity_2m",
+          "apparent_temperature",
+          "wind_speed_10m",
+          "precipitation",
+          "weather_code",
+        ],
+      };
+      const url = "https://api.open-meteo.com/v1/forecast";
+      const responses = await fetchWeatherApi(url, params);
 
     // Process first location. Add a for-loop for multiple locations or weather models
     const response = responses[0];
@@ -51,10 +57,7 @@ export default function useGetWeather() {
           },
           (_, i) =>
             new Date(
-              (Number(hourly.time()) +
-                i * hourly.interval() +
-                utcOffsetSeconds) *
-                1000
+              (Number(hourly.time()) + i * hourly.interval()) * 1000
             )
         ),
         temperature_2m: hourly.variables(0)!.valuesArray(),
@@ -69,8 +72,7 @@ export default function useGetWeather() {
           },
           (_, i) =>
             new Date(
-              (Number(daily.time()) + i * daily.interval() + utcOffsetSeconds) *
-                1000
+              (Number(daily.time()) + i * daily.interval()) * 1000
             )
         ),
         temperature_2m_max: daily.variables(0)!.valuesArray(),
