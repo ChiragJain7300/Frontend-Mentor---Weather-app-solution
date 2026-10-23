@@ -1,19 +1,20 @@
 "use client";
 import {
-  currentWeather,
-  DailyForecast,
-  HourlyForecast,
   LocationObj,
 } from "@/constants";
-import { createContext, ReactNode, useContext, useState } from "react";
+import { createContext, ReactNode, useContext, useMemo, useState } from "react";
+export interface UnitsI {
+  temp: "C" | "F";
+  windSpeed: "kmh" | "mph";
+  precipitation: "mm" | "in";
+}
 interface WeatherContextI {
   location: LocationObj;
   setLocation: React.Dispatch<React.SetStateAction<LocationObj>>;
-  dailyWeatherData?: DailyForecast[];
-  hourlyWeatherData?: HourlyForecast[];
-  currentWeatherData?: currentWeather;
+  units: UnitsI;
+  setUnits: React.Dispatch<React.SetStateAction<UnitsI>>;
 }
-export const WeatherContext = createContext<WeatherContextI | null>(null);
+const WeatherContext = createContext<WeatherContextI | null>(null);
 export default function WeatherContextProvider({
   children,
 }: {
@@ -25,15 +26,18 @@ export default function WeatherContextProvider({
     locationCity: "Delhi",
     locationCountry: "India",
   });
+  const [units, setUnits] = useState<UnitsI>({
+    temp: "C",
+    windSpeed: "kmh",
+    precipitation: "mm",
+  });
+  // Memoize value so consumers don't re-render unnecessarily
+  const value = useMemo(
+    () => ({ location, setLocation, units, setUnits }),
+    [location, units],
+  );
   return (
-    <WeatherContext.Provider
-      value={{
-        location,
-        setLocation,
-      }}
-    >
-      {children}
-    </WeatherContext.Provider>
+    <WeatherContext.Provider value={value}>{children}</WeatherContext.Provider>
   );
 }
 
@@ -42,7 +46,7 @@ export function useWeatherContext() {
 
   if (!context) {
     throw new Error(
-      "useWeatherContext must be used inside WeatherContextProvider"
+      "useWeatherContext must be used inside WeatherContextProvider",
     );
   }
 

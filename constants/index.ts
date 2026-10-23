@@ -1,21 +1,21 @@
-export interface WeatherComponents {
+export interface WeatherComponentsI {
   id: number;
   title: string;
   value: string;
   unit: string;
 }
 export interface DailyForecast {
-  id: number;
   day: string;
   imgLink?: number;
   minTemp: number;
   maxTemp: number;
 }
 export interface HourlyForecast {
-  id: number; // 0–23 or use i + 1 if you prefer
   imgLink?: number;
   hour: string;
   temperature: string;
+  day?: string;
+  timestamp?: number;
 }
 export interface LocationObj {
   long: number;
@@ -24,11 +24,19 @@ export interface LocationObj {
   locationState?: string;
   locationCountry?: string;
 }
-export interface currentWeather {
+export interface WeatherDataI {
+  hourlyForecast: HourlyForecast[];
+  dailyForecast: DailyForecast[];
   currentTemp: number;
   weatherCode?: number;
+  weatherComponents?: WeatherComponentsI[];
 }
-export const weatherComponentsSample: WeatherComponents[] = [
+export type WeatherState = {
+  data: WeatherDataI | null;
+  status: "idle" | "loading" | "success" | "error";
+  error: string | null;
+};
+export const weatherComponents: WeatherComponentsI[] = [
   {
     id: 1,
     title: "Feels Like",
@@ -62,7 +70,7 @@ export const dailyForecastSample: DailyForecast[] = Array.from(
     imgLink: -1,
     minTemp: 0,
     maxTemp: 0,
-  })
+  }),
 );
 export const hourlyForecastSample: HourlyForecast[] = Array.from(
   { length: 24 },
@@ -71,5 +79,5 @@ export const hourlyForecastSample: HourlyForecast[] = Array.from(
     imgLink: -1,
     hour: "",
     temperature: "",
-  })
+  }),
 );
